@@ -1,3 +1,4 @@
+import { authSubscribe, signOut } from "@junobuild/core";
 import {
   AlertCircle,
   ArrowRightLeft,
@@ -347,6 +348,23 @@ export default function App() {
   const { actor } = useActor();
 
   const [activeTab, setActiveTab] = useState("dashboard");
+  // Listen for Juno Web3 Authentication
+  useEffect(() => {
+    const unsubscribe = authSubscribe((user) => {
+      if (user) {
+        console.log("User successfully logged in with Juno:", user.key);
+        // For right now, to keep your app from breaking, let's mock an admin user 
+        // once Juno logs them in. We will map real roles in the next step!
+        setCurrentUser({ username: "JunoAdmin", password: "", role: "admin", _backendId: user.key });
+      } else {
+        // If they sign out of Juno, clear the local state
+        setCurrentUser(null);
+        localStorage.removeItem("stockflow_user");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
   const [notification, setNotification] = useState<{
     message: string;
     type: string;
@@ -1325,9 +1343,12 @@ export default function App() {
           )}
           <button
             type="button"
-            onClick={() => {
-              localStorage.removeItem("stockflow_user");
-              setCurrentUser(null);
+            onClick={async () => {
+  await signOut();
+  setCurrentUser(null);
+  localStorage.removeItem("stockflow_user");
+}}
+           
             }}
             className="text-gray-400 hover:text-red-500 transition-colors"
           >
