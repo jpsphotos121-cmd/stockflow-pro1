@@ -1,8 +1,9 @@
-import { LogOut, Package, User } from "lucide-react";
+import { Package } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-import type { AppUser } from "../types";
+import { signIn } from "@junobuild/core";
 
+// Keep your existing Navigation buttons intact
 function SidebarButton({
   active,
   onClick,
@@ -51,79 +52,28 @@ function NavButton({
   );
 }
 
-/* ================= LOGIN SCREEN ================= */
+/* ================= JUNO LOGIN SCREEN ================= */
+// Notice we removed the old props since Juno handles the actual auth flow via the subscription in App.tsx
 function LoginScreen({
-  users,
-  onLogin,
   showNotification,
-  loginViaBackend,
 }: {
-  users: AppUser[];
-  onLogin: (u: AppUser) => void;
   showNotification: (m: string, t?: string) => void;
-  loginViaBackend?: (
-    username: string,
-    password: string,
-  ) => Promise<AppUser | null>;
 }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const quickLogins = [
-    {
-      label: "Admin",
-      username: "admin",
-      color: "bg-blue-100 text-blue-700 hover:bg-blue-200",
-    },
-    {
-      label: "Staff",
-      username: "staff",
-      color: "bg-green-100 text-green-700 hover:bg-green-200",
-    },
-    {
-      label: "Supplier",
-      username: "supplier",
-      color: "bg-amber-100 text-amber-700 hover:bg-amber-200",
-    },
-  ];
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJunoLogin = async () => {
     if (loading) return;
     setLoading(true);
     try {
-      if (loginViaBackend) {
-        const user = await loginViaBackend(username, password);
-        if (user) {
-          localStorage.setItem("stockflow_user", JSON.stringify(user));
-          onLogin(user);
-          showNotification(`Welcome back, ${user.username}!`, "success");
-        } else {
-          showNotification("Invalid credentials", "error");
-        }
-      } else {
-        const user = users.find(
-          (u) =>
-            u.username.toLowerCase() === username.toLowerCase() &&
-            u.password === password,
-        );
-        if (user) {
-          localStorage.setItem("stockflow_user", JSON.stringify(user));
-          onLogin(user);
-          showNotification(`Welcome back, ${user.username}!`, "success");
-        } else {
-          showNotification("Invalid credentials", "error");
-        }
-      }
-    } finally {
+      // This triggers the Internet Identity popup
+      await signIn();
+      // We don't need to manually call onLogin here because the authSubscribe 
+      // in your App.tsx file will automatically detect the sign-in!
+    } catch (err) {
+      console.error("Login failed:", err);
+      showNotification("Authentication failed", "error");
       setLoading(false);
     }
-  };
-
-  const handleQuickLogin = (u: string) => {
-    setUsername(u);
-    setPassword("password");
   };
 
   return (
@@ -134,60 +84,37 @@ function LoginScreen({
             <Package size={40} />
           </div>
         </div>
+        
         <h1 className="text-3xl font-black text-center text-gray-900 mb-2 tracking-tighter">
           StockManager
         </h1>
         <p className="text-center text-gray-500 mb-8 text-xs font-bold uppercase tracking-widest">
-          Inventory System
+          Web3 Inventory System
         </p>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="relative">
-            <User
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
-              placeholder="Username"
-            />
-          </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-center"
-            placeholder="••••••••"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 uppercase tracking-widest text-xs mt-2 disabled:opacity-60"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-        <div className="mt-6">
-          <p className="text-center text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3">
-            Quick Login
-          </p>
-          <div className="flex gap-2 justify-center">
-            {quickLogins.map((q) => (
-              <button
-                key={q.username}
-                type="button"
-                onClick={() => handleQuickLogin(q.username)}
-                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors ${q.color}`}
-              >
-                {q.label}
-              </button>
-            ))}
-          </div>
-        </div>
+
+        <button
+          type="button"
+          onClick={handleJunoLogin}
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95 uppercase tracking-widest text-xs mt-2 disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            "Connecting securely..."
+          ) : (
+            <>
+              <img 
+                src="https://juno.build/img/internet-computer-icp-logo.svg" 
+                alt="ICP Logo" 
+                className="w-5 h-5 invert" 
+              />
+              Sign In with Internet Identity
+            </>
+          )}
+        </button>
+        
+        <p className="text-center text-gray-400 mt-6 text-[10px] font-bold uppercase tracking-widest">
+          Secured by Juno on the Blockchain
+        </p>
       </div>
     </div>
   );
