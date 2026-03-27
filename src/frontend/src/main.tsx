@@ -1,10 +1,11 @@
+import { initSatellite } from "@junobuild/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReactDOM from "react-dom/client";
+
 import App from "./App";
-import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
 import "./index.css";
 
-BigInt.prototype.toJSON = function () {
+BigInt.prototype.toJSON = function () { 
   return this.toString();
 };
 
@@ -16,10 +17,16 @@ declare global {
 
 const queryClient = new QueryClient();
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={queryClient}>
-    <InternetIdentityProvider>
+// Wrap everything in an async function to initialize Juno first
+const init = async () => {
+  await initSatellite();
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <QueryClientProvider client={queryClient}>
       <App />
-    </InternetIdentityProvider>
-  </QueryClientProvider>,
-);
+    </QueryClientProvider>,
+  );
+};
+
+// Fire it up!
+init();
